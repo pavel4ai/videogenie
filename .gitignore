@@ -1,0 +1,28 @@
+# SvelteKit and Vite
+/.svelte-kit/
+/build/
+.DS_Store
+
+# Node / npm / yarn
+/node_modules/
+npm-debug.log*
+yarn-error.log*
+package-lock.json
+# If using Yarn PnP:
+# .pnp.*
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE / Editor specific
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Custom Ignores
+spec.md
+
+# Operating System files
+Thumbs.db

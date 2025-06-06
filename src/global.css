@@ -1,0 +1,28 @@
+/* In your main CSS file or within a Svelte component's <style> tag */
+
+:root {
+    --primary-bg: #121212;
+    --secondary-bg: #1E1E1E;
+    --primary-accent: #8A2BE2; /* Blue Violet */
+    --secondary-accent: #A052E2; /* Orchid */
+    --primary-text: #F5F5F5; /* White Smoke */
+    --secondary-text: #A9A9A9; /* Dark Gray */
+    --border-radius-sm: 10px;
+    --border-radius-lg: 18px;
+}
+
+body {
+    background-color: var(--primary-bg);
+    color: var(--primary-text);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+}
+
+/* More specific styles for components will be in their respective .svelte files */
