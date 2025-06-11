@@ -20,8 +20,8 @@ WORKDIR /workspace
 RUN echo "=== Copying download_and_verify_weights.sh script ===" && \
     # Clone the specific repository into a temporary directory
     git clone https://github.com/pavel4ai/videogenie.git /tmp/temp-repo && \
-    # Copy only the required script to the workspace
-    cp /tmp/temp-repo/videogenie/download_and_verify_weights.sh /workspace/download_and_verify_weights.sh && \
+    # Copy the required script to the workspace
+    cp /tmp/temp-repo/download_and_verify_weights.sh /workspace/download_and_verify_weights.sh && \
     # Remove the temporary clone
     rm -rf /tmp/temp-repo && \
     # Make the specific script executable
