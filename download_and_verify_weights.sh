@@ -3,7 +3,6 @@
 echo "=== Starting model weights download ==="
 
 # Define the target directory (ensure consistency with Dockerfile)
-WEIGHTS_DIR="/workspace/Wan2.1/Wan2.1-I2V-14B-720P"
 MODEL_NAME="Wan-AI/Wan2.1-I2V-14B-720P"
 MAX_RETRIES=5
 RETRY_DELAY=10  # seconds

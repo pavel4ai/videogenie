@@ -63,7 +63,7 @@ ENV PATH="/workspace/venv/bin:/workspace/.local/bin:${PATH}"
 
 # Modify Gradio script to use port 8080 (Use correct path)
 RUN echo "=== Modifying Gradio script port ===" && \
-     sed -i 's/server_port=7860/server_port=8080/' /workspace/Wan2.1/gradio/t2v_14B_singleGPU.py
+     sed -i 's/server_port=7860/server_port=8080/' /workspace/Wan2.1/gradio/i2v_14B_singleGPU.py
 
 # Expose the correct port
 EXPOSE 8080
