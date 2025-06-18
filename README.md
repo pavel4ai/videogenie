@@ -19,8 +19,8 @@ This project is built based on the requirements outlined in `spec.md`.
 
 *   🚀 **Frontend:** SvelteKit
 *   🎨 **Styling:** CSS with "Purple Haze" design system (dark theme with purple accents)
-*   🔒 **Backend Communication:** SSH for interacting with the remote GPU server (credentials managed via `.env` file).
-*   🤖 **Remote GPU Server:** (Assumed) Python environment with Wan2.1 model, `ffmpeg`, and necessary dependencies, accessible via SSH.
+*   🔗 **Backend Communication:** Direct local process execution using Node.js `child_process` module
+*   🤖 **Local AI Backend:** Python environment with Wan2.1 model, `ffmpeg`, and necessary dependencies running on the same server
 
 ## 🚀 Getting Started
 
@@ -35,19 +35,16 @@ This project is built based on the requirements outlined in `spec.md`.
     npm install
     ```
 
-3.  **🔑 Configure SSH (Important!):**
+3.  **⚙️ Configure Local Environment:**
     *   Copy the example environment file: `cp .env.example .env`
     *   Open the newly created `.env` file in your text editor.
-    *   Fill in your remote GPU server's SSH connection details:
-        *   `PRIVATE_SSH_HOST`: Your server's hostname or IP address.
-        *   `PRIVATE_SSH_PORT`: The SSH port (usually `22`).
-        *   `PRIVATE_SSH_USERNAME`: Your username for the SSH connection.
-        *   Authentication Method (choose one):
-            *   `PRIVATE_SSH_PASSWORD`: Your SSH password (less secure).
-            *   `PRIVATE_SSH_PRIVATE_KEY_PATH`: The absolute path to your SSH private key file (recommended). E.g., `/home/user/.ssh/id_rsa` or `C:\Users\YourUser\.ssh\id_rsa`.
-            *   `PRIVATE_SSH_PASSPHRASE`: If your private key is protected by a passphrase, enter it here.
-    *   **Note:** The `.env` file is included in `.gitignore` and will **not** be committed to the repository, keeping your credentials secure.
-    *   Ensure your local machine has SSH key-based access to the remote server if using a private key, or that password authentication is enabled on the server if using a password.
+    *   Configure your local WAN2.1 model paths and settings:
+        *   `CKPT_DIR`: Path to your WAN2.1 checkpoint directory (e.g., `./Wan2.1-I2V-14B`)
+        *   `PYTHON_PATH`: Python executable path (usually `python` or `python3`)
+        *   `GENERATE_SCRIPT_PATH`: Path to your generate.py script (e.g., `./generate.py`)
+        *   `WORKING_DIR`: Working directory for the AI model execution
+        *   Storage paths for uploads and outputs
+    *   **Note:** The `.env` file is included in `.gitignore` and will **not** be committed to the repository.
 
 4.  **Run the development server:**
     ```bash
@@ -55,36 +52,43 @@ This project is built based on the requirements outlined in `spec.md`.
     ```
     The application will be available at `http://localhost:5173` (or the port specified by Vite).
 
-## 🖥️ Backend Setup (Remote GPU Server)
+## 🖥️ Local Backend Setup
 
-Ensure the following are set up on your remote GPU server:
+Ensure the following are set up on your local server:
 
-*   🐍 Python environment with all dependencies for the Wan2.1 model.
-*   The `Wan2.1-I2V-14B` checkpoint directory (`ckpt_dir`).
-*   ⚙️ `ffmpeg` installed and accessible in the system PATH.
-*   A `generate.py` script (or similar) that accepts arguments as specified in `spec.md`:
+*   🐍 Python environment with all dependencies for the Wan2.1 model
+*   The `Wan2.1-I2V-14B` checkpoint directory at the path specified in your `.env` file
+*   ⚙️ `ffmpeg` installed and accessible in the system PATH
+*   A `generate.py` script that accepts arguments as specified in `spec.md`:
     ```shell
     python generate.py --task i2v-14B --size 1280*720 --ckpt_dir ./Wan2.1-I2V-14B --image /path/to/uploaded/image.jpg --prompt "User's text prompt"
     ```
+*   🔧 Node.js with permissions to execute shell commands via `child_process`
 
 ## 📁 Project Structure
 
 ```
 .
-├── .env                   # Local environment variables (gitignored)
-├── .env.example           # Example environment variables
+├── .env                     # Local environment variables (gitignored)
+├── .env.example             # Example environment variables
+├── uploads/                 # Uploaded images (created automatically)
+├── outputs/                 # Generated videos and GIFs (created automatically)
+├── temp/                    # Temporary files (created automatically)
 ├── src/
 │   ├── app.html             # Main HTML shell
 │   ├── global.css           # Global styles (Purple Haze theme)
 │   ├── lib/
 │   │   ├── components/      # Reusable Svelte components (to be added)
 │   │   └── server/
-│   │       └── ssh_utils.js # SSH connection and command utilities (uses .env)
+│   │       └── process_utils.js # Local process execution utilities
 │   └── routes/
 │       ├── +page.svelte     # Main UI page
 │       └── api/
-│           └── generate/
-│               └── +server.js # API endpoint for video generation
+│           ├── generate/
+│           │   └── +server.js # API endpoint for video generation
+│           └── download/
+│               └── [filename]/
+│                   └── +server.js # API endpoint for file downloads
 ├── static/                  # Static assets (e.g., favicon, placeholder images)
 │   └── favicon.png
 ├── .gitignore
@@ -105,4 +109,5 @@ This SvelteKit application can be deployed to various platforms that support Nod
     ```
 2.  Follow the deployment guide for your chosen platform using the generated `build` directory.
 
-**Note for Remote Deployment:** Ensure the deployed backend (SvelteKit server-side functions) can securely communicate with your GPU inference server. This will involve setting up the same environment variables (e.g., `PRIVATE_SSH_HOST`, `PRIVATE_SSH_USERNAME`, etc.) on your deployment platform that you used in your local `.env` file.
+**Note for Deployment:** Ensure the deployed server has:
+- All environment variables from your local `.env` file configured on the deployment platform
