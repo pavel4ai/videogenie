@@ -1,6 +1,10 @@
 # 🔮 VideoGenie ✨
 
-VideoGenie is a web-based application that allows users to upload an image and provide a text prompt to generate a video and an animated GIF. The generation process utilizes a remotely hosted generative AI model (Wan2.1) running on a GPU-accelerated server.
+VideoGenie is a web-based application that allows users to generate videos and animated GIFs using the powerful WAN2.1 model. It supports two generation modes:
+- **🖼️ Image-to-Video (I2V)**: Upload an image and provide a text prompt to generate a video
+- **✍️ Text-to-Video (T2V)**: Provide only a text prompt to generate a video from scratch
+
+The generation process utilizes the WAN2.1 model running in a GPU-accelerated Docker container environment.
 
 ## 📝 Project Specifications
 
@@ -8,19 +12,24 @@ This project is built based on the requirements outlined in `spec.md`.
 
 ## 🌟 Features
 
-*   🖼️ **Image Upload:** Supports JPEG and PNG formats.
-*   ✍️ **Text Prompt Input:** Allows users to describe the desired video content.
-*   🎬 **Video Generation:** Creates an MP4 video using a remote AI model.
-*   🎞️ **GIF Generation:** Creates an animated GIF from the generated video using `ffmpeg`.
-*   💾 **Download Options:** Provides download links for both the video and GIF.
-*   📱💻 **Responsive UI:** Designed with SvelteKit for a modern web experience, following the "Purple Haze" aesthetic.
+*   🖼️ **Image-to-Video (I2V):** Upload an image and add a text prompt to generate a video
+*   ✍️ **Text-to-Video (T2V):** Generate videos from text prompts alone
+*   🎬 **WAN2.1 Integration:** Uses the latest WAN2.1 model for high-quality video generation
+*   🎞️ **Automatic GIF Generation:** Creates optimized animated GIFs from generated videos using `ffmpeg`
+*   💾 **Secure Downloads:** Provides secure download links for both videos (MP4) and GIFs
+*   📱💻 **Responsive UI:** Modern web interface built with SvelteKit, featuring the "Purple Haze" aesthetic
+*   🐳 **Docker Ready:** Designed to run in GPU-accelerated Docker containers
+*   🔒 **File Validation:** Supports JPEG and PNG formats with configurable size limits
 
 ## 🛠️ Tech Stack
 
 *   🚀 **Frontend:** SvelteKit
 *   🎨 **Styling:** CSS with "Purple Haze" design system (dark theme with purple accents)
-*   🔗 **Backend Communication:** Direct local process execution using Node.js `child_process` module
-*   🤖 **Local AI Backend:** Python environment with Wan2.1 model, `ffmpeg`, and necessary dependencies running on the same server
+*   🔗 **Backend Communication:** Node.js `child_process` for local command execution
+*   🤖 **AI Backend:** WAN2.1-I2V-14B-720P model running in Docker container
+*   🐳 **Container:** NVIDIA PyTorch Docker image with GPU acceleration
+*   🎥 **Video Processing:** FFmpeg for GIF conversion and optimization
+*   🔧 **Process Management:** Custom utilities for WAN2.1 command-line integration
 
 ## 🚀 Getting Started
 
@@ -35,15 +44,26 @@ This project is built based on the requirements outlined in `spec.md`.
     npm install
     ```
 
-3.  **⚙️ Configure Local Environment:**
-    *   Copy the example environment file: `cp .env.example .env`
-    *   Open the newly created `.env` file in your text editor.
-    *   Configure your local WAN2.1 model paths and settings:
-        *   `CKPT_DIR`: Path to your WAN2.1 checkpoint directory (e.g., `./Wan2.1-I2V-14B`)
-        *   `PYTHON_PATH`: Python executable path (usually `python` or `python3`)
-        *   `GENERATE_SCRIPT_PATH`: Path to your generate.py script (e.g., `./generate.py`)
-        *   `WORKING_DIR`: Working directory for the AI model execution
-        *   Storage paths for uploads and outputs
+3.  **⚙️ Configure Docker Environment:**
+    *   Create your environment file: `cp .env.example .env`
+    *   Configure the `.env` file with Docker container paths:
+        ```bash
+        # WAN2.1 Model Configuration (Docker Paths)
+        CKPT_DIR=/workspace/Wan2.1/Wan2.1-I2V-14B-720P
+        PYTHON_PATH=/workspace/venv/bin/python
+        GENERATE_SCRIPT_PATH=/workspace/Wan2.1/generate.py
+        WORKING_DIR=/workspace
+        
+        # File Storage Paths
+        UPLOAD_DIR=/workspace/uploads
+        OUTPUT_DIR=/workspace/outputs
+        TEMP_DIR=/workspace/temp
+        
+        # Generation Settings
+        DEFAULT_VIDEO_SIZE=1280*720
+        DEFAULT_I2V_TASK=i2v-14B
+        DEFAULT_T2V_TASK=t2v-14B
+        ```
     *   **Note:** The `.env` file is included in `.gitignore` and will **not** be committed to the repository.
 
 4.  **Run the development server:**
@@ -52,44 +72,106 @@ This project is built based on the requirements outlined in `spec.md`.
     ```
     The application will be available at `http://localhost:5173` (or the port specified by Vite).
 
-## 🖥️ Local Backend Setup
+## 🐳 Docker Container Setup
 
-Ensure the following are set up on your local server:
+VideoGenie is designed to run in a GPU-accelerated Docker container. The included `Dockerfile` sets up:
 
-*   🐍 Python environment with all dependencies for the Wan2.1 model
-*   The `Wan2.1-I2V-14B` checkpoint directory at the path specified in your `.env` file
-*   ⚙️ `ffmpeg` installed and accessible in the system PATH
-*   A `generate.py` script that accepts arguments as specified in `spec.md`:
-    ```shell
-    python generate.py --task i2v-14B --size 1280*720 --ckpt_dir ./Wan2.1-I2V-14B --image /path/to/uploaded/image.jpg --prompt "User's text prompt"
-    ```
-*   🔧 Node.js with permissions to execute shell commands via `child_process`
+*   🐍 **Python Environment:** NVIDIA PyTorch base image with WAN2.1 dependencies
+*   🤖 **WAN2.1 Model:** Automatically downloads `Wan2.1-I2V-14B-720P` checkpoint
+*   ⚙️ **FFmpeg:** Pre-installed for video and GIF processing
+*   🔧 **Script Integration:** Uses the official WAN2.1 `generate.py` script
+
+### **Supported WAN2.1 Commands:**
+
+**Image-to-Video (I2V):**
+```bash
+python generate.py --task i2v-14B --size 1280*720 \
+  --ckpt_dir /workspace/Wan2.1/Wan2.1-I2V-14B-720P \
+  --image /path/to/image.jpg --prompt "Your prompt here" \
+  --save_file /workspace/outputs/video.mp4
+```
+
+**Text-to-Video (T2V):**
+```bash
+python generate.py --task t2v-14B --size 1280*720 \
+  --ckpt_dir /workspace/Wan2.1/Wan2.1-I2V-14B-720P \
+  --prompt "Your prompt here" \
+  --save_file /workspace/outputs/video.mp4
+```
+
+## 🚀 API Usage
+
+### **Image-to-Video Generation:**
+```javascript
+const formData = new FormData();
+formData.append('image', imageFile);
+formData.append('prompt', 'A cat playing in the garden');
+formData.append('type', 'i2v');
+
+const response = await fetch('/api/generate', {
+  method: 'POST',
+  body: formData
+});
+```
+
+### **Text-to-Video Generation:**
+```javascript
+const formData = new FormData();
+formData.append('prompt', 'A beautiful sunset over the ocean');
+formData.append('type', 't2v');
+
+const response = await fetch('/api/generate', {
+  method: 'POST',
+  body: formData
+});
+```
+
+### **API Response:**
+```json
+{
+  "success": true,
+  "message": "I2V generation completed successfully",
+  "generationType": "i2v",
+  "files": {
+    "video": {
+      "filename": "i2v_14B_1280x720_1703123456789.mp4",
+      "downloadUrl": "/api/download/i2v_14B_1280x720_1703123456789.mp4"
+    },
+    "gif": {
+      "filename": "i2v_14B_1280x720_1703123456789.gif",
+      "downloadUrl": "/api/download/i2v_14B_1280x720_1703123456789.gif"
+    }
+  }
+}
+```
 
 ## 📁 Project Structure
 
 ```
-.
-├── .env                     # Local environment variables (gitignored)
-├── .env.example             # Example environment variables
-├── uploads/                 # Uploaded images (created automatically)
-├── outputs/                 # Generated videos and GIFs (created automatically)
-├── temp/                    # Temporary files (created automatically)
+videogenie/
+├── .env                     # Environment variables (gitignored)
+├── .env.example             # Example environment configuration
+├── Dockerfile               # Docker container configuration
+├── download_and_verify_weights.sh # WAN2.1 model download script
+├── uploads/                 # Uploaded images (auto-created in container)
+├── outputs/                 # Generated videos and GIFs (auto-created in container)
+├── temp/                    # Temporary files (auto-created in container)
 ├── src/
 │   ├── app.html             # Main HTML shell
 │   ├── global.css           # Global styles (Purple Haze theme)
 │   ├── lib/
-│   │   ├── components/      # Reusable Svelte components (to be added)
+│   │   ├── components/      # Reusable Svelte components
 │   │   └── server/
-│   │       └── process_utils.js # Local process execution utilities
+│   │       └── process_utils.js # WAN2.1 command-line integration
 │   └── routes/
 │       ├── +page.svelte     # Main UI page
 │       └── api/
 │           ├── generate/
-│           │   └── +server.js # API endpoint for video generation
+│           │   └── +server.js # T2V/I2V generation endpoint
 │           └── download/
 │               └── [filename]/
-│                   └── +server.js # API endpoint for file downloads
-├── static/                  # Static assets (e.g., favicon, placeholder images)
+│                   └── +server.js # Secure file download endpoint
+├── static/                  # Static assets
 │   └── favicon.png
 ├── .gitignore
 ├── package.json
@@ -99,15 +181,107 @@ Ensure the following are set up on your local server:
 └── spec.md                  # Project requirements and specifications
 ```
 
+## 🔍 Health Check
+
+Test your setup with the health check endpoint:
+
+**GET** `/api/generate`
+```json
+{
+  "status": "healthy",
+  "dependencies": {
+    "Python": {
+      "available": true,
+      "version": "Python 3.x.x"
+    },
+    "FFmpeg": {
+      "available": true,
+      "version": "ffmpeg version x.x.x"
+    }
+  },
+  "config": {
+    "ckptDir": "/workspace/Wan2.1/Wan2.1-I2V-14B-720P",
+    "workingDir": "/workspace",
+    "pythonPath": "/workspace/venv/bin/python",
+    "generateScriptPath": "/workspace/Wan2.1/generate.py"
+  }
+}
+```
+
 ## 🌐 Deployment
 
-This SvelteKit application can be deployed to various platforms that support Node.js applications (e.g., Vercel, Netlify, or your own server).
+VideoGenie is designed for deployment in GPU-accelerated container environments.
 
-1.  **Build the application:** 📦
-    ```bash
-    npm run build
-    ```
-2.  Follow the deployment guide for your chosen platform using the generated `build` directory.
+### **🐳 Docker Deployment:**
 
-**Note for Deployment:** Ensure the deployed server has:
-- All environment variables from your local `.env` file configured on the deployment platform
+1. **Build the Docker container:**
+   ```bash
+   docker build -t videogenie .
+   ```
+
+2. **Run with GPU support:**
+   ```bash
+   docker run --gpus all -p 8080:8080 -p 5173:5173 \
+     -v $(pwd)/.env:/workspace/.env \
+     videogenie
+   ```
+
+3. **Access the application:**
+   - **Gradio Interface:** `http://localhost:8080` (original WAN2.1 interface)
+   - **VideoGenie Web UI:** `http://localhost:5173` (enhanced interface)
+
+### **☁️ Cloud Deployment:**
+
+**Requirements for cloud deployment:**
+- ✅ GPU-enabled container service (AWS ECS with GPU, Google Cloud Run on GKE, Azure Container Instances)
+- ✅ Persistent storage for model checkpoints and outputs
+- ✅ Sufficient memory (16GB+ recommended for WAN2.1-14B)
+- ✅ Environment variables configured:
+  ```bash
+  CKPT_DIR=/workspace/Wan2.1/Wan2.1-I2V-14B-720P
+  PYTHON_PATH=/workspace/venv/bin/python
+  GENERATE_SCRIPT_PATH=/workspace/Wan2.1/generate.py
+  WORKING_DIR=/workspace
+  OUTPUT_DIR=/workspace/outputs
+  ```
+
+### **🔧 Production Considerations:**
+
+- **Model Loading:** The WAN2.1 model checkpoint (~28GB) is downloaded automatically on first run
+- **Storage:** Configure persistent volumes for `/workspace/outputs` to preserve generated files
+- **Scaling:** Each container instance requires dedicated GPU resources
+- **Monitoring:** Use the health check endpoint `/api/generate` (GET) for container health monitoring
+- **Security:** Implement proper authentication and rate limiting for production use
+
+## ✨ VideoGenie vs. Gradio Interface
+
+VideoGenie provides an enhanced web interface compared to the default Gradio interface:
+
+| Feature | Gradio Interface | VideoGenie Web UI |
+|---------|------------------|-------------------|
+| **Design** | Basic Gradio components | Modern "Purple Haze" themed UI |
+| **Generation Types** | Manual task selection | Smart I2V/T2V detection |
+| **File Management** | Basic upload/download | Secure file handling with validation |
+| **API Integration** | Web interface only | RESTful API + Web interface |
+| **Download Options** | Direct file access | Secure download links for MP4 + GIF |
+| **Error Handling** | Basic error display | Comprehensive error handling and logging |
+| **Mobile Support** | Limited responsiveness | Fully responsive design |
+| **Customization** | Limited theming | Fully customizable SvelteKit interface |
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🙏 Acknowledgments
+
+- **WAN2.1 Team** for the incredible video generation model
+- **SvelteKit** for the modern web framework
+- **NVIDIA** for GPU acceleration support
