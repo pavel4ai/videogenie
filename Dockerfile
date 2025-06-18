@@ -9,22 +9,23 @@ ENV PYTHONUNBUFFERED=1
 # Update and install system dependencies (combine steps)
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends git ffmpeg wget && \
+    apt-get install -y --no-install-recommends git ffmpeg wget curl && \
+    # Install Node.js 18.x
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
     # Clean up apt lists
     rm -rf /var/lib/apt/lists/*
 
 # Standardize on /workspace
 WORKDIR /workspace
 
-# Clone the correct repository and copy only the required script
-RUN echo "=== Copying download_and_verify_weights.sh script ===" && \
-    # Clone the specific repository into a temporary directory
-    git clone https://github.com/pavel4ai/videogenie.git /tmp/temp-repo && \
-    # Copy the required script to the workspace
-    cp /tmp/temp-repo/download_and_verify_weights.sh /workspace/download_and_verify_weights.sh && \
-    # Remove the temporary clone
-    rm -rf /tmp/temp-repo && \
-    # Make the specific script executable
+# Clone VideoGenie repository and set up the web application
+RUN echo "=== Cloning VideoGenie repository ===" && \
+    # Clone the VideoGenie repository
+    git clone https://github.com/pavel4ai/videogenie.git /workspace/videogenie && \
+    # Copy the download script
+    cp /workspace/videogenie/download_and_verify_weights.sh /workspace/download_and_verify_weights.sh && \
+    # Make the script executable
     chmod +x /workspace/download_and_verify_weights.sh
 
 # Create virtual environment with access to system packages
@@ -61,18 +62,56 @@ RUN echo "=== Setting up Python virtual environment and installing packages ==="
 # Ensure huggingface-cli installed in the venv is found
 ENV PATH="/workspace/venv/bin:/workspace/.local/bin:${PATH}"
 
-# Modify Gradio script to use port 8080 (Use correct path)
-RUN echo "=== Modifying Gradio script port ===" && \
-     sed -i 's/server_port=7860/server_port=8080/' /workspace/Wan2.1/gradio/i2v_14B_singleGPU.py
+# Install VideoGenie Web UI dependencies
+RUN echo "=== Installing VideoGenie Web UI dependencies ===" && \
+    cd /workspace/videogenie && \
+    npm install && \
+    # Create necessary directories
+    mkdir -p /workspace/uploads /workspace/outputs /workspace/temp
 
-# Expose the correct port
+# Configure VideoGenie environment
+RUN echo "=== Setting up VideoGenie configuration ===" && \
+    cd /workspace/videogenie && \
+    # Create .env file with Docker container paths
+    echo "# VideoGenie Configuration for Docker Container" > .env && \
+    echo "CKPT_DIR=/workspace/Wan2.1/Wan2.1-I2V-14B-720P" >> .env && \
+    echo "PYTHON_PATH=/workspace/venv/bin/python" >> .env && \
+    echo "GENERATE_SCRIPT_PATH=/workspace/Wan2.1/generate.py" >> .env && \
+    echo "WORKING_DIR=/workspace" >> .env && \
+    echo "UPLOAD_DIR=/workspace/uploads" >> .env && \
+    echo "OUTPUT_DIR=/workspace/outputs" >> .env && \
+    echo "TEMP_DIR=/workspace/temp" >> .env && \
+    echo "DEFAULT_VIDEO_SIZE=1280*720" >> .env && \
+    echo "DEFAULT_I2V_TASK=i2v-14B" >> .env && \
+    echo "DEFAULT_T2V_TASK=t2v-14B" >> .env && \
+    echo "GIF_FPS=10" >> .env && \
+    echo "GIF_SCALE=480" >> .env && \
+    echo "MAX_FILE_SIZE=10485760" >> .env && \
+    echo "ALLOWED_FILE_TYPES=image/jpeg,image/png" >> .env && \
+    echo "NODE_ENV=production" >> .env && \
+    # Update vite.config.js to use port 8080
+    echo "import { sveltekit } from '@sveltejs/kit/vite';" > vite.config.js && \
+    echo "import { defineConfig } from 'vite';" >> vite.config.js && \
+    echo "" >> vite.config.js && \
+    echo "export default defineConfig({" >> vite.config.js && \
+    echo "  plugins: [sveltekit()]," >> vite.config.js && \
+    echo "  server: {" >> vite.config.js && \
+    echo "    host: '0.0.0.0'," >> vite.config.js && \
+    echo "    port: 8080" >> vite.config.js && \
+    echo "  }" >> vite.config.js && \
+    echo "});" >> vite.config.js
+
+# Expose port 8080 for VideoGenie Web UI
 EXPOSE 8080
 
 # Set up non-root user, ensuring ownership of the workspace. DO NOT CHANGE THIS SECTION.
 ARG USERNAME="centml"
 ARG USER_UID=1024
 RUN useradd -u 1024 -m -d /workspace -s /bin/bash ${USERNAME} && \
-    chown -R ${USERNAME}:${USERNAME} /workspace
+    chown -R ${USERNAME}:${USERNAME} /workspace && \
+    # Ensure the user can write to necessary directories
+    mkdir -p /workspace/uploads /workspace/outputs /workspace/temp && \
+    chown -R ${USERNAME}:${USERNAME} /workspace/uploads /workspace/outputs /workspace/temp
 
 # Switch to the non-root user DO NOT CHANGE THIS SECTION.
 USER 1024
@@ -81,6 +120,6 @@ USER 1024
 ENTRYPOINT ["/workspace/download_and_verify_weights.sh"]
 
 # CMD provides the command FOR THE ENTRYPOINT script to execute after download
-CMD ["/workspace/venv/bin/python", "/workspace/Wan2.1/gradio/i2v_14B_singleGPU.py", "--ckpt_dir_720p", "/workspace/Wan2.1/Wan2.1-I2V-14B-720P"]
+CMD ["sh", "-c", "cd /workspace/videogenie && npm run dev -- --host 0.0.0.0 --port 8080"]
 
 

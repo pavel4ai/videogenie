@@ -30,6 +30,25 @@ fi
 
 
 
+echo "=== Setting up VideoGenie directories ==="
+# Ensure output directories exist and have proper permissions
+mkdir -p /workspace/uploads /workspace/outputs /workspace/temp
+chmod 755 /workspace/uploads /workspace/outputs /workspace/temp
+
+echo "=== Verifying VideoGenie setup ==="
+cd /workspace/videogenie
+if [ -f "package.json" ]; then
+    echo "VideoGenie package.json found"
+    if [ -f ".env" ]; then
+        echo "VideoGenie .env configuration found"
+    else
+        echo "Warning: .env configuration not found"
+    fi
+else
+    echo "Error: VideoGenie package.json not found"
+    exit 1
+fi
+
 echo "=== Handing over execution to CMD: [$@] ==="
 # Execute the command passed as arguments (the CMD from Dockerfile)
 exec "$@"
