@@ -88,8 +88,7 @@ RUN echo "=== Setting up VideoGenie configuration ===" && \
     echo "GIF_SCALE=480" >> .env && \
     echo "MAX_FILE_SIZE=10485760" >> .env && \
     echo "ALLOWED_FILE_TYPES=image/jpeg,image/png" >> .env && \
-    echo "NODE_ENV=production" >> .env && \
-    # Update vite.config.js to use port 8080
+    # Update vite.config.js to use port 8080 and allow all hosts
     echo "import { sveltekit } from '@sveltejs/kit/vite';" > vite.config.js && \
     echo "import { defineConfig } from 'vite';" >> vite.config.js && \
     echo "" >> vite.config.js && \
@@ -97,7 +96,10 @@ RUN echo "=== Setting up VideoGenie configuration ===" && \
     echo "  plugins: [sveltekit()]," >> vite.config.js && \
     echo "  server: {" >> vite.config.js && \
     echo "    host: '0.0.0.0'," >> vite.config.js && \
-    echo "    port: 8080" >> vite.config.js && \
+    echo "    port: 8080," >> vite.config.js && \
+    # For production use allowedHosts: ['yourdomain.com', 'api.yourdomain.com']
+    echo "    allowedHosts: 'all'," >> vite.config.js && \
+    echo "    disableHostCheck: true" >> vite.config.js && \
     echo "  }" >> vite.config.js && \
     echo "});" >> vite.config.js
 

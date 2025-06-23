@@ -116,7 +116,8 @@
         {#if generatedVideoUrl}
           <div class="result-card">
             <h3>Generated Video (MP4)</h3>
-            <video controls src={generatedVideoUrl} width="320">
+            <video controls src={generatedVideoUrl} width="320" aria-label="Generated video preview">
+              <track kind="captions" src="" label="No captions available" />
               Your browser does not support the video tag.
             </video>
             <a href={generatedVideoUrl} download="generated_video.mp4" class="button-primary download-button">Download Video</a>
