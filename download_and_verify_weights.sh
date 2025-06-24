@@ -46,13 +46,37 @@ if [ -f "package.json" ]; then
     else
         echo "Warning: .env configuration not found"
     fi
-    if [ -f "vite.config.js" ]; then
-        echo "VideoGenie vite.config.js found"
-        echo "Vite config contents:"
-        cat vite.config.js
-    else
-        echo "Warning: vite.config.js not found"
-    fi
+    
+    # FORCE RECREATE vite.config.js at runtime to ensure it's correct
+    echo "=== FORCE RECREATING vite.config.js at runtime ==="
+    rm -f vite.config.js
+    cat > vite.config.js << 'VITE_EOF'
+// RUNTIME GENERATED CONFIG - ALLOWS ALL HOSTS
+import { sveltekit } from '@sveltejs/kit/vite';
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  plugins: [sveltekit()],
+  server: {
+    host: true,
+    port: 8080,
+    strictPort: true,
+    allowedHosts: 'all',
+    disableHostCheck: true,
+    hmr: { host: 'localhost', port: 8080 },
+    cors: true
+  },
+  preview: {
+    host: true,
+    port: 8080,
+    strictPort: true
+  }
+});
+VITE_EOF
+    
+    echo "=== FINAL vite.config.js contents ==="
+    cat vite.config.js
+    
 else
     echo "Error: VideoGenie package.json not found"
     exit 1

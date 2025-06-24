@@ -20,9 +20,12 @@ RUN apt-get update && \
 WORKDIR /workspace
 
 # Clone VideoGenie repository and set up the web application
-RUN echo "=== Cloning VideoGenie repository ===" && \
-    # Clone the VideoGenie repository
-    git clone https://github.com/pavel4ai/videogenie.git /workspace/videogenie && \
+RUN echo "=== Cloning VideoGenie repository (bypassing cache) ===" && \
+    # Add timestamp to bypass Docker cache for git clone
+    echo "Build timestamp: $(date)" && \
+    # Clone the VideoGenie repository (force fresh clone)
+    rm -rf /workspace/videogenie && \
+    git clone --no-cache https://github.com/pavel4ai/videogenie.git /workspace/videogenie && \
     # Copy the download script
     cp /workspace/videogenie/download_and_verify_weights.sh /workspace/download_and_verify_weights.sh && \
     # Make the script executable
@@ -69,9 +72,11 @@ RUN echo "=== Installing VideoGenie Web UI dependencies ===" && \
     # Create necessary directories
     mkdir -p /workspace/uploads /workspace/outputs /workspace/temp
 
-# Configure VideoGenie environment
-RUN echo "=== Setting up VideoGenie configuration ===" && \
+# Configure VideoGenie environment (FORCE OVERWRITE ALL CONFIG)
+RUN echo "=== Setting up VideoGenie configuration (forcing fresh config) ===" && \
     cd /workspace/videogenie && \
+    # FORCE delete any existing config files
+    rm -f .env vite.config.js && \
     # Create .env file with Docker container paths
     echo "# VideoGenie Configuration for Docker Container" > .env && \
     echo "CKPT_DIR=/workspace/Wan2.1/Wan2.1-I2V-14B-720P" >> .env && \
@@ -88,28 +93,33 @@ RUN echo "=== Setting up VideoGenie configuration ===" && \
     echo "GIF_SCALE=480" >> .env && \
     echo "MAX_FILE_SIZE=10485760" >> .env && \
     echo "ALLOWED_FILE_TYPES=image/jpeg,image/png" >> .env && \
-    # Create vite.config.js with proper host configuration for containers
-    printf "import { sveltekit } from '@sveltejs/kit/vite';\n" > vite.config.js && \
-    printf "import { defineConfig } from 'vite';\n\n" >> vite.config.js && \
-    printf "export default defineConfig({\n" >> vite.config.js && \
-    printf "  plugins: [sveltekit()],\n" >> vite.config.js && \
-    printf "  server: {\n" >> vite.config.js && \
-    printf "    host: '0.0.0.0',\n" >> vite.config.js && \
-    printf "    port: 8080,\n" >> vite.config.js && \
-    printf "    strictPort: true,\n" >> vite.config.js && \
-    printf "    allowedHosts: 'all',\n" >> vite.config.js && \
-    printf "    disableHostCheck: true,\n" >> vite.config.js && \
-    printf "    hmr: {\n" >> vite.config.js && \
-    printf "      host: '0.0.0.0',\n" >> vite.config.js && \
-    printf "      port: 8080\n" >> vite.config.js && \
-    printf "    }\n" >> vite.config.js && \
-    printf "  },\n" >> vite.config.js && \
-    printf "  preview: {\n" >> vite.config.js && \
-    printf "    host: '0.0.0.0',\n" >> vite.config.js && \
-    printf "    port: 8080,\n" >> vite.config.js && \
-    printf "    strictPort: true\n" >> vite.config.js && \
-    printf "  }\n" >> vite.config.js && \
-    printf "});\n" >> vite.config.js
+    # BULLETPROOF vite.config.js - FORCE CREATE with maximum host allowance
+    echo "// AUTO-GENERATED CONTAINER CONFIG - DO NOT MODIFY" > vite.config.js && \
+    echo "import { sveltekit } from '@sveltejs/kit/vite';" >> vite.config.js && \
+    echo "import { defineConfig } from 'vite';" >> vite.config.js && \
+    echo "" >> vite.config.js && \
+    echo "export default defineConfig({" >> vite.config.js && \
+    echo "  plugins: [sveltekit()]," >> vite.config.js && \
+    echo "  server: {" >> vite.config.js && \
+    echo "    host: true,  // Allow external connections" >> vite.config.js && \
+    echo "    port: 8080," >> vite.config.js && \
+    echo "    strictPort: true," >> vite.config.js && \
+    echo "    allowedHosts: 'all',  // Allow ALL hosts" >> vite.config.js && \
+    echo "    disableHostCheck: true,  // Disable host checking completely" >> vite.config.js && \
+    echo "    hmr: { host: 'localhost', port: 8080 }," >> vite.config.js && \
+    echo "    cors: true  // Enable CORS" >> vite.config.js && \
+    echo "  }," >> vite.config.js && \
+    echo "  preview: {" >> vite.config.js && \
+    echo "    host: true," >> vite.config.js && \
+    echo "    port: 8080," >> vite.config.js && \
+    echo "    strictPort: true" >> vite.config.js && \
+    echo "  }" >> vite.config.js && \
+    echo "});" >> vite.config.js && \
+    # Verify the config was created
+    echo "=== VERIFYING vite.config.js was created ===" && \
+    ls -la vite.config.js && \
+    echo "=== vite.config.js contents ===" && \
+    cat vite.config.js
 
 # Expose port 8080 for VideoGenie Web UI
 EXPOSE 8080
