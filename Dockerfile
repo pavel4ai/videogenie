@@ -88,20 +88,28 @@ RUN echo "=== Setting up VideoGenie configuration ===" && \
     echo "GIF_SCALE=480" >> .env && \
     echo "MAX_FILE_SIZE=10485760" >> .env && \
     echo "ALLOWED_FILE_TYPES=image/jpeg,image/png" >> .env && \
-    # Update vite.config.js to use port 8080 and allow all hosts
-    echo "import { sveltekit } from '@sveltejs/kit/vite';" > vite.config.js && \
-    echo "import { defineConfig } from 'vite';" >> vite.config.js && \
-    echo "" >> vite.config.js && \
-    echo "export default defineConfig({" >> vite.config.js && \
-    echo "  plugins: [sveltekit()]," >> vite.config.js && \
-    echo "  server: {" >> vite.config.js && \
-    echo "    host: '0.0.0.0'," >> vite.config.js && \
-    echo "    port: 8080," >> vite.config.js && \
-    # For production use allowedHosts: ['yourdomain.com', 'api.yourdomain.com']
-    echo "    allowedHosts: 'all'," >> vite.config.js && \
-    echo "    disableHostCheck: true" >> vite.config.js && \
-    echo "  }" >> vite.config.js && \
-    echo "});" >> vite.config.js
+    # Create vite.config.js with proper host configuration for containers
+    printf "import { sveltekit } from '@sveltejs/kit/vite';\n" > vite.config.js && \
+    printf "import { defineConfig } from 'vite';\n\n" >> vite.config.js && \
+    printf "export default defineConfig({\n" >> vite.config.js && \
+    printf "  plugins: [sveltekit()],\n" >> vite.config.js && \
+    printf "  server: {\n" >> vite.config.js && \
+    printf "    host: '0.0.0.0',\n" >> vite.config.js && \
+    printf "    port: 8080,\n" >> vite.config.js && \
+    printf "    strictPort: true,\n" >> vite.config.js && \
+    printf "    allowedHosts: 'all',\n" >> vite.config.js && \
+    printf "    disableHostCheck: true,\n" >> vite.config.js && \
+    printf "    hmr: {\n" >> vite.config.js && \
+    printf "      host: '0.0.0.0',\n" >> vite.config.js && \
+    printf "      port: 8080\n" >> vite.config.js && \
+    printf "    }\n" >> vite.config.js && \
+    printf "  },\n" >> vite.config.js && \
+    printf "  preview: {\n" >> vite.config.js && \
+    printf "    host: '0.0.0.0',\n" >> vite.config.js && \
+    printf "    port: 8080,\n" >> vite.config.js && \
+    printf "    strictPort: true\n" >> vite.config.js && \
+    printf "  }\n" >> vite.config.js && \
+    printf "});\n" >> vite.config.js
 
 # Expose port 8080 for VideoGenie Web UI
 EXPOSE 8080
@@ -122,6 +130,7 @@ USER 1024
 ENTRYPOINT ["/workspace/download_and_verify_weights.sh"]
 
 # CMD provides the command FOR THE ENTRYPOINT script to execute after download
-CMD ["sh", "-c", "cd /workspace/videogenie && npm run dev -- --host 0.0.0.0 --port 8080"]
+# Note: Host and port settings are configured in vite.config.js, not via CLI args
+CMD ["sh", "-c", "cd /workspace/videogenie && npm run dev"]
 
 

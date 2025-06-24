@@ -46,6 +46,13 @@ if [ -f "package.json" ]; then
     else
         echo "Warning: .env configuration not found"
     fi
+    if [ -f "vite.config.js" ]; then
+        echo "VideoGenie vite.config.js found"
+        echo "Vite config contents:"
+        cat vite.config.js
+    else
+        echo "Warning: vite.config.js not found"
+    fi
 else
     echo "Error: VideoGenie package.json not found"
     exit 1
