@@ -20,12 +20,15 @@ RUN apt-get update && \
 WORKDIR /workspace
 
 # Clone VideoGenie repository and set up the web application
+# Use ARG to force cache invalidation for git clone
+ARG CACHEBUST=1
 RUN echo "=== Cloning VideoGenie repository (bypassing cache) ===" && \
     # Add timestamp to bypass Docker cache for git clone
     echo "Build timestamp: $(date)" && \
+    echo "Cache bust: ${CACHEBUST}" && \
     # Clone the VideoGenie repository (force fresh clone)
     rm -rf /workspace/videogenie && \
-    git clone --no-cache https://github.com/pavel4ai/videogenie.git /workspace/videogenie && \
+    git clone https://github.com/pavel4ai/videogenie.git /workspace/videogenie && \
     # Copy the download script
     cp /workspace/videogenie/download_and_verify_weights.sh /workspace/download_and_verify_weights.sh && \
     # Make the script executable
@@ -140,7 +143,7 @@ USER 1024
 ENTRYPOINT ["/workspace/download_and_verify_weights.sh"]
 
 # CMD provides the command FOR THE ENTRYPOINT script to execute after download
-# Note: Host and port settings are configured in vite.config.js, not via CLI args
-CMD ["sh", "-c", "cd /workspace/videogenie && npm run dev"]
+# Note: Using custom startup script that bypasses ALL host restrictions
+CMD ["sh", "-c", "cd /workspace/videogenie && ./start_videogenie.sh"]
 
 

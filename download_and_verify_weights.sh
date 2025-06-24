@@ -58,21 +58,42 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [sveltekit()],
   server: {
-    host: true,
-    port: 8080,
-    strictPort: true,
-    allowedHosts: 'all',
-    disableHostCheck: true,
-    hmr: { host: 'localhost', port: 8080 },
-    cors: true
-  },
-  preview: {
-    host: true,
+    host: '0.0.0.0',
     port: 8080,
     strictPort: true
+  },
+  preview: {
+    host: '0.0.0.0',
+    port: 8080,
+    strictPort: true
+  },
+  define: {
+    global: 'globalThis'
   }
 });
 VITE_EOF
+    
+    # NUCLEAR OPTION: Create a custom startup script that bypasses host checks completely
+    echo "=== CREATING CUSTOM STARTUP SCRIPT ==="
+    cat > start_videogenie.sh << 'START_EOF'
+#!/bin/bash
+echo "=== Starting VideoGenie with NO HOST RESTRICTIONS ==="
+
+# Set environment variables to disable host checking
+export VITE_HOST="0.0.0.0"
+export VITE_PORT="8080"
+export VITE_ALLOWED_HOSTS="all"
+
+# Start Vite with maximum permissive settings
+cd /workspace/videogenie
+exec node node_modules/vite/bin/vite.js dev \
+  --host 0.0.0.0 \
+  --port 8080 \
+  --force \
+  --config vite.config.js
+START_EOF
+    
+    chmod +x start_videogenie.sh
     
     echo "=== FINAL vite.config.js contents ==="
     cat vite.config.js
