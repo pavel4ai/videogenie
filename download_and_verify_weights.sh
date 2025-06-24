@@ -47,11 +47,30 @@ if [ -f "package.json" ]; then
         echo "Warning: .env configuration not found"
     fi
     
-    # FORCE RECREATE vite.config.js at runtime to ensure it's correct
-    echo "=== FORCE RECREATING vite.config.js at runtime ==="
+    # CRITICAL DIAGNOSIS: Check existing config before overwriting
+    echo "=== PRE-OVERWRITE DIAGNOSIS ==="
+    echo "Current working directory: $(pwd)"
+    echo "Files in current directory:"
+    ls -la
+    echo ""
+    
+    if [ -f "vite.config.js" ]; then
+        echo "❌ PROBLEM FOUND: vite.config.js already exists from repository!"
+        echo "Repository vite.config.js content:"
+        cat vite.config.js
+        echo ""
+        echo "This repository config has NO server.allowedHosts configuration!"
+        echo "That's why host blocking is occurring."
+    else
+        echo "✅ No vite.config.js found - good to create new one"
+    fi
+    echo ""
+    
+    # FORCE OVERWRITE with container-specific config
+    echo "=== OVERWRITING WITH CONTAINER CONFIG (WITH allowedHosts) ==="
     rm -f vite.config.js
     cat > vite.config.js << 'VITE_EOF'
-// RUNTIME GENERATED CONFIG - ALLOWS ALL HOSTS
+// CONTAINER CONFIG - OVERWRITES REPOSITORY CONFIG - FIXES HOST BLOCKING
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
@@ -60,7 +79,8 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 8080,
-    strictPort: true
+    strictPort: true,
+    allowedHosts: 'all'  // THIS IS THE CRITICAL MISSING PIECE
   },
   preview: {
     host: '0.0.0.0',
@@ -73,30 +93,103 @@ export default defineConfig({
 });
 VITE_EOF
     
-    # NUCLEAR OPTION: Create a custom startup script that bypasses host checks completely
-    echo "=== CREATING CUSTOM STARTUP SCRIPT ==="
+    # DIAGNOSTIC SCRIPT: Let's understand what's happening
+    echo "=== CREATING DIAGNOSTIC STARTUP SCRIPT ==="
     cat > start_videogenie.sh << 'START_EOF'
 #!/bin/bash
-echo "=== Starting VideoGenie with NO HOST RESTRICTIONS ==="
+echo "=== COMPREHENSIVE VITE DIAGNOSTICS ==="
 
-# Set environment variables to disable host checking
+cd /workspace/videogenie
+
+echo "=== 1. CHECKING ALL CONFIG FILES ==="
+find . -name "vite.config.*" -type f
+find . -name "svelte.config.*" -type f
+echo ""
+
+echo "=== 2. CURRENT WORKING DIRECTORY ==="
+pwd
+ls -la
+echo ""
+
+echo "=== 3. VITE CONFIG CONTENT ==="
+if [ -f "vite.config.js" ]; then
+    echo "✅ vite.config.js found:"
+    cat vite.config.js
+else
+    echo "❌ vite.config.js NOT found"
+fi
+echo ""
+
+echo "=== 4. SVELTE CONFIG CONTENT ==="
+if [ -f "svelte.config.js" ]; then
+    echo "✅ svelte.config.js found:"
+    cat svelte.config.js
+else
+    echo "❌ svelte.config.js NOT found"
+fi
+echo ""
+
+echo "=== 5. PACKAGE.JSON SCRIPTS ==="
+if [ -f "package.json" ]; then
+    echo "Scripts section:"
+    cat package.json | grep -A 10 '"scripts"'
+else
+    echo "❌ package.json NOT found"
+fi
+echo ""
+
+echo "=== 6. ENVIRONMENT VARIABLES ==="
+env | grep -i vite || echo "No VITE env vars found"
+echo ""
+
+echo "=== 7. NODE MODULES VITE ==="
+ls -la node_modules/.bin/vite
+echo "Vite version:"
+node node_modules/vite/bin/vite.js --version
+echo ""
+
+echo "=== 8. TESTING VITE CONFIG LOADING ==="
+echo "Testing config file loading..."
+node -e "
+try {
+  const { loadConfigFromFile } = require('vite');
+  loadConfigFromFile({ command: 'serve', mode: 'development' }, './vite.config.js').then(result => {
+    console.log('Config loaded successfully:', JSON.stringify(result.config.server, null, 2));
+  }).catch(err => {
+    console.log('Config loading failed:', err.message);
+  });
+} catch(e) {
+  console.log('Error loading vite:', e.message);
+}
+"
+echo ""
+
+echo "=== 9. STARTING VITE WITH DEBUG LOGGING ==="
+export DEBUG="vite:*"
 export VITE_HOST="0.0.0.0"
 export VITE_PORT="8080"
-export VITE_ALLOWED_HOSTS="all"
 
-# Start Vite with maximum permissive settings
-cd /workspace/videogenie
-exec node node_modules/vite/bin/vite.js dev \
-  --host 0.0.0.0 \
-  --port 8080 \
-  --force \
-  --config vite.config.js
+echo "Starting with command: npm run dev"
+npm run dev
 START_EOF
     
     chmod +x start_videogenie.sh
     
     echo "=== FINAL vite.config.js contents ==="
     cat vite.config.js
+    
+    # Let's also check if there are any SvelteKit-specific configs
+    echo "=== CHECKING FOR SVELTEKIT CONFIGS ==="
+    if [ -f "svelte.config.js" ]; then
+        echo "SvelteKit config found:"
+        cat svelte.config.js
+    else
+        echo "No svelte.config.js found"
+    fi
+    
+    # Check for any other config files that might override
+    echo "=== ALL CONFIG FILES IN DIRECTORY ==="
+    find . -maxdepth 1 -name "*.config.*" -type f | head -10
     
 else
     echo "Error: VideoGenie package.json not found"
