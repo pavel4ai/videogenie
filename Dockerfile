@@ -75,15 +75,14 @@ RUN echo "=== Installing VideoGenie Web UI dependencies ===" && \
     # Create necessary directories
     mkdir -p /workspace/uploads /workspace/outputs /workspace/temp
 
-# Configure VideoGenie environment (OVERWRITE REPOSITORY CONFIG)
-RUN echo "=== Setting up VideoGenie configuration (OVERWRITING REPOSITORY CONFIGS) ===" && \
+# Configure VideoGenie environment (.env only - vite.config.js is now in repository)
+RUN echo "=== Setting up VideoGenie configuration ===" && \
     cd /workspace/videogenie && \
-    echo "Repository vite.config.js before overwrite:" && \
+    echo "Using repository vite.config.js (now contains container-compatible config):" && \
     cat vite.config.js && \
     echo "" && \
-    # FORCE delete any existing config files from repository
-    rm -f .env vite.config.js && \
-    # Create .env file with Docker container paths
+    # Create .env file with Docker container paths (only delete .env, keep vite.config.js)
+    rm -f .env && \
     echo "# VideoGenie Configuration for Docker Container" > .env && \
     echo "CKPT_DIR=/workspace/Wan2.1/Wan2.1-I2V-14B-720P" >> .env && \
     echo "PYTHON_PATH=/workspace/venv/bin/python" >> .env && \
@@ -99,29 +98,12 @@ RUN echo "=== Setting up VideoGenie configuration (OVERWRITING REPOSITORY CONFIG
     echo "GIF_SCALE=480" >> .env && \
     echo "MAX_FILE_SIZE=10485760" >> .env && \
     echo "ALLOWED_FILE_TYPES=image/jpeg,image/png" >> .env && \
-    # OVERWRITE REPOSITORY vite.config.js with CONTAINER-SPECIFIC CONFIG
-    echo "// DOCKER CONTAINER CONFIG - OVERWRITES REPOSITORY CONFIG" > vite.config.js && \
-    echo "import { sveltekit } from '@sveltejs/kit/vite';" >> vite.config.js && \
-    echo "import { defineConfig } from 'vite';" >> vite.config.js && \
-    echo "" >> vite.config.js && \
-    echo "export default defineConfig({" >> vite.config.js && \
-    echo "  plugins: [sveltekit()]," >> vite.config.js && \
-    echo "  server: {" >> vite.config.js && \
-    echo "    host: '0.0.0.0'," >> vite.config.js && \
-    echo "    port: 8080," >> vite.config.js && \
-    echo "    strictPort: true," >> vite.config.js && \
-    echo "    allowedHosts: 'all'" >> vite.config.js && \
-    echo "  }," >> vite.config.js && \
-    echo "  preview: {" >> vite.config.js && \
-    echo "    host: '0.0.0.0'," >> vite.config.js && \
-    echo "    port: 8080," >> vite.config.js && \
-    echo "    strictPort: true" >> vite.config.js && \
-    echo "  }" >> vite.config.js && \
-    echo "});" >> vite.config.js && \
-    # Verify the config was created and overwritten
-    echo "=== VERIFYING vite.config.js was OVERWRITTEN ===" && \
-    ls -la vite.config.js && \
-    echo "=== NEW vite.config.js contents ===" && \
+    # Verify configuration
+    echo "=== FINAL CONFIGURATION VERIFICATION ===" && \
+    echo ".env contents:" && \
+    cat .env && \
+    echo "" && \
+    echo "vite.config.js contents:" && \
     cat vite.config.js
 
 # Expose port 8080 for VideoGenie Web UI

@@ -47,51 +47,21 @@ if [ -f "package.json" ]; then
         echo "Warning: .env configuration not found"
     fi
     
-    # CRITICAL DIAGNOSIS: Check existing config before overwriting
-    echo "=== PRE-OVERWRITE DIAGNOSIS ==="
+    # VERIFY REPOSITORY CONFIG (no more runtime overwriting needed)
+    echo "=== VERIFYING REPOSITORY CONFIG ==="
     echo "Current working directory: $(pwd)"
-    echo "Files in current directory:"
-    ls -la
     echo ""
     
     if [ -f "vite.config.js" ]; then
-        echo "❌ PROBLEM FOUND: vite.config.js already exists from repository!"
-        echo "Repository vite.config.js content:"
+        echo "✅ Repository vite.config.js found with container-compatible config:"
         cat vite.config.js
         echo ""
-        echo "This repository config has NO server.allowedHosts configuration!"
-        echo "That's why host blocking is occurring."
+        echo "✅ Config should now include allowedHosts: 'all' to fix host blocking"
     else
-        echo "✅ No vite.config.js found - good to create new one"
+        echo "❌ ERROR: vite.config.js not found in repository!"
+        exit 1
     fi
     echo ""
-    
-    # FORCE OVERWRITE with container-specific config
-    echo "=== OVERWRITING WITH CONTAINER CONFIG (WITH allowedHosts) ==="
-    rm -f vite.config.js
-    cat > vite.config.js << 'VITE_EOF'
-// CONTAINER CONFIG - OVERWRITES REPOSITORY CONFIG - FIXES HOST BLOCKING
-import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vite';
-
-export default defineConfig({
-  plugins: [sveltekit()],
-  server: {
-    host: '0.0.0.0',
-    port: 8080,
-    strictPort: true,
-    allowedHosts: 'all'  // THIS IS THE CRITICAL MISSING PIECE
-  },
-  preview: {
-    host: '0.0.0.0',
-    port: 8080,
-    strictPort: true
-  },
-  define: {
-    global: 'globalThis'
-  }
-});
-VITE_EOF
     
     # DIAGNOSTIC SCRIPT: Let's understand what's happening
     echo "=== CREATING DIAGNOSTIC STARTUP SCRIPT ==="
@@ -175,20 +145,16 @@ START_EOF
     
     chmod +x start_videogenie.sh
     
-    echo "=== FINAL vite.config.js contents ==="
+    echo "=== RUNTIME CONFIGURATION SUMMARY ==="
+    echo "✅ Repository vite.config.js (no runtime overwrite needed):"
     cat vite.config.js
+    echo ""
     
-    # Let's also check if there are any SvelteKit-specific configs
-    echo "=== CHECKING FOR SVELTEKIT CONFIGS ==="
-    if [ -f "svelte.config.js" ]; then
-        echo "SvelteKit config found:"
-        cat svelte.config.js
-    else
-        echo "No svelte.config.js found"
-    fi
+    echo "✅ Container .env configuration:"
+    cat .env
+    echo ""
     
-    # Check for any other config files that might override
-    echo "=== ALL CONFIG FILES IN DIRECTORY ==="
+    echo "✅ All configuration files in directory:"
     find . -maxdepth 1 -name "*.config.*" -type f | head -10
     
 else
