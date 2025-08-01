@@ -8,7 +8,7 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 8080,
     strictPort: true,
-    allowedHosts: 'all'  // Allow all hosts - fixes container host blocking
+    allowedHosts: true  // Allow all hosts - fixes container host blocking
   },
   preview: {
     host: '0.0.0.0',
